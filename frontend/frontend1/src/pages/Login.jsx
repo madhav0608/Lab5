@@ -29,10 +29,24 @@ const [errorMessage, setErrorMessage] = useState(""); // Initialize with an empt
 const handleChange = (e) => {
   const { name, value } = e.target;
   setFormData({
-    ...formData,
-    [name]: value,
+    ...formData, 
+    [name]: value, 
   });
 };
+
+/*
+const updatedFormData = { ...formData, email: "new@example.com" };
+
+will come as
+
+const updatedFormData = {
+  email: "user@example.com",  // from ...formData
+  password: "password123",    // from ...formData
+  name: "John Doe",           // from ...formData
+  email: "new@example.com"    // from [name]: value (overwrites the previous email)
+};
+  
+*/
 
 // Handle form submission for login
 const handleSubmit = async (e) => {

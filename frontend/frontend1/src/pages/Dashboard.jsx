@@ -23,6 +23,7 @@ const Dashboard = () => {
         if (response.ok) {
           // If logged in, fetch the username and update the state
           const data = await response.json();
+          console.log("data is ",data);
           setUsername(data.username); // Assuming the response has a username field
         } else {
           // If not logged in, redirect to the login page
@@ -37,10 +38,22 @@ const Dashboard = () => {
     checkStatus();
   }, [navigate]);
 
+  /* 
+    syntax for useEffect : 
+    useEffect(() => {
+        // Code to run when the component mounts or when specific dependencies change
+    }, [dependencies]);
+
+    here in above dependies array we have navigate as a dependency, so whenever navigate changes( it doesnot change in general) 
+    but better practice to include all which are used in useEffect in the dependencies array, so that if navigate changes,
+    the useEffect will run again.
+  
+  */
+
   return (
     <div>
       <Navbar />
-      <h1>Hi {username}!</h1>
+      <h1>Hi {username} !</h1>
       <div>Welcome to the Ecommerce App</div>
     </div>
   );

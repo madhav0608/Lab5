@@ -10,10 +10,10 @@ const port = 4000;
 // PostgreSQL connection
 // NOTE: use YOUR postgres username and password here
 const pool = new Pool({
-  user: 'postgres',
+  user: 'sreyas',
   host: 'localhost',
   database: 'ecommerce',
-  password: '0608',
+  password: 'sreyasp',
   port: 5432,
 });
 
@@ -94,6 +94,7 @@ app.post('/signup', async (req, res) => {
 
     // Store the user_id in the session
     req.session.userId = newUser.user_id;
+    req.session.username = newUser.username;
 
     // Respond with success message
     return res.status(200).json({ message: "User Registered Successfully" });
@@ -137,6 +138,8 @@ app.post("/login", async (req, res) => {
 
     // Store the user ID in the session after successful login
     req.session.userId = user.user_id;
+    req.session.username = user.username;
+
 
     // Respond with a success message
     return res.status(200).json({ message: "Login successful" });
@@ -151,10 +154,11 @@ app.post("/login", async (req, res) => {
 // use correct status codes and messages mentioned in the lab document
 app.get("/isLoggedIn", (req, res) => {
   if (req.session && req.session.userId) {
-    return res.status(200).json({ message: "User is logged in" });
+    return res.status(200).json({ message: "User1 is logged in",username:req.session.username });
   }
   return res.status(400).json({ message: "User is not logged in" });
 });
+
 
 // TODO: Implement API used to logout the user
 // use correct status codes and messages mentioned in the lab document

@@ -6,33 +6,66 @@ import { apiUrl } from "../config/config";
 import "../css/OrderConfirmation.css";
 
 const OrderConfirmation = () => {
-  // TODO: Implement the checkStatus function
-  // If the user is logged in, fetch order details.
-  // If not logged in, redirect the user to the login page.
+  const [orderDetails, setOrderDetails] = useState(null);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
+
   useEffect(() => {
     const checkStatus = async () => {
-      // Implement logic here to check if the user is logged in
-      // If not, navigate to /login
-      // Otherwise, call the fetchOrderConfirmation function
+      try {
+        const response = await fetch(`${apiUrl}/check-login-status`, {
+          credentials: "include",
+        });
+        const data = await response.json();
+
+        if (response.ok && data.loggedIn) {
+          fetchOrderConfirmation();
+        } else {
+          navigate("/login");
+        }
+      } catch (error) {
+        console.error("Error checking login status:", error);
+        navigate("/login");
+      }
     };
     checkStatus();
-  }, []);
+  }, [navigate]);
 
-  // TODO: Use useState to manage the orderDetails and error state
-
-
-  // TODO: Implement the fetchOrderConfirmation function
-  // This function should fetch order details from the API and set the state
   const fetchOrderConfirmation = async () => {
-    // Implement your API call to fetch order details
-    // Update the orderDetails state with the response data
-    // Show appropriate error messages if any.
+    try {
+      const response = await fetch(`${apiUrl}/order-confirmation`, {
+        credentials: "include",
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        setOrderDetails(data);
+      } else {
+        setError(data.message || "Failed to fetch order details");
+      }
+    } catch (error) {
+      console.error("Error fetching order details:", error);
+      setError("Failed to fetch order details");
+    }
   };
 
   return (
     <>
-    {/* Implement the JSX for the order-confirmation
-     page as described in the assignment. */}
+      <Navbar />
+      <div className="order-confirmation">
+        {error && <p className="error">{error}</p>}
+        {orderDetails ? (
+          <div>
+            <h1>Order Confirmation</h1>
+            <p>Order ID: {orderDetails.orderId}</p>
+            <p>Order Date: {orderDetails.orderDate}</p>
+            <p>Total Amount: ${orderDetails.totalAmount}</p>
+            {/* Add more order details as needed */}
+          </div>
+        ) : (
+          <p>Loading order details...</p>
+        )}
+      </div>
     </>
   );
 };
