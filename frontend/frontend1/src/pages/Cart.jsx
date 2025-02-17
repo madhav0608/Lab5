@@ -102,6 +102,7 @@ const Cart = () => {
       return;
     }
   
+    
     // Send the update to the server (via API) to update the cart
     try {
       const res = await fetch(`${apiUrl}/update-cart`, {
