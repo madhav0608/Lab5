@@ -59,7 +59,15 @@ const Products = () => {
     }
   };
 
+  
   // Handle quantity changes for each product
+
+  /*
+    instead of passing direct object to set Quantities , we should pass a function to setQuantities
+    as it is not need to pass prev_quantites to setQuantities ,
+    we can directly access it by prev , like syntax is setQuantities((prev)=>{new state})
+  */
+
   const handleQuantityChange = (productId, change) => {
     setQuantities((prev) => {
       const newQty = (prev[productId] || 0) + change;
@@ -110,7 +118,7 @@ const Products = () => {
   
   // Implement the search functionality
   const handleSearch = (e) => {
-    e.preventDefault();
+    e.preventDefault(); // default action is to reload the page, we don't want that
     setFilteredProducts(
       products.filter((product) =>
         product.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -160,7 +168,7 @@ const Products = () => {
                       <button onClick={() => handleQuantityChange(product.product_id, 1)}>+</button>
                     </td>
                     <td>
-                      <button onClick={() => addToCart(product.product_id)}>Add to Cart</button>
+                      <button onClick={() => { addToCart(product.product_id); setQuantities((prev) => ({ ...prev, [product.product_id]: 0 })); }}>Add to Cart</button>
                     </td>
                   </tr>
                 ))

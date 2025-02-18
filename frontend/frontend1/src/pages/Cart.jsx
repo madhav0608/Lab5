@@ -3,6 +3,10 @@ import { useNavigate } from "react-router";
 import { apiUrl } from "../config/config";
 import "../css/Cart.css";
 
+
+
+// Important Cart contains field item_id not product_id
+
 const Cart = () => {
   // TODO: Implement the checkStatus function
   // If the user is already logged in, fetch the cart.
@@ -69,11 +73,13 @@ const Cart = () => {
 
       const data = await res.json();
 
+      console.log(data.cart)
+
       if (res.status === 200) {
         if (data.cart.length === 0) {
           setMessage("No items in cart.");
         } else {
-          setCart(data.cart.sort((a, b) => a.product_id - b.product_id)); // Sort by product_id
+          setCart(data.cart.sort((a, b) => a.item_id - b.item_id)); // Sort by item_id
           setTotalPrice(data.totalPrice);
           setMessage("Cart fetched successfully.");
         }
@@ -89,55 +95,61 @@ const Cart = () => {
   // TODO: Implement the updateQuantity function
   // This function should handle increasing or decreasing item quantities
   // based on user input. Make sure it doesn't exceed stock limits.
-  const updateQuantity = async (productId, change, currentQuantity, stockQuantity) => {
+  const updateQuantity = async (itemId, change, currentQuantity, stockQuantity) => {
     // Calculate the new quantity based on user input
     const newQuantity = currentQuantity + change;
   
-    // Ensure the new quantity is within the bounds (0 to stockQuantity)
-    if (newQuantity < 0) {
-      setError("Quantity cannot be less than 0.");
+
+    if(newQuantity === 0){
+      removeFromCart(itemId);
       return;
-    } else if (newQuantity > stockQuantity) {
+    }
+
+    if (newQuantity > stockQuantity) {
       setError("Quantity exceeds available stock.");
       return;
     }
-  
-    
+
     // Send the update to the server (via API) to update the cart
     try {
       const res = await fetch(`${apiUrl}/update-cart`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          product_id: productId,
-          quantity: newQuantity,
+          product_id: itemId,
+          newQuantity: newQuantity,
         }),
       });
   
       const data = await res.json();
+
+      console.log(data);
   
       if (res.status === 200) {
         // Update the cart state if successful
         setCart((prevCart) => {
           // Update the quantity of the specific product
           const updatedCart = prevCart.map((item) =>
-            item.product_id === productId
+            item.item_id === itemId
               ? { ...item, quantity: newQuantity }
               : item
-          );
-  
-          // Recalculate the total price
-          const updatedTotalPrice = updatedCart.reduce(
-            (total, item) => total + item.quantity * item.unit_price,
-            0
-          );
-          setTotalPrice(updatedTotalPrice);
-  
+          );  
           return updatedCart;
         });
+
+
+        const item = cart.find(item => item.item_id === itemId);
+        const newtotal = (newQuantity - currentQuantity) * item.unit_price;
+        setTotalPrice(prevTotalPrice => 
+          Number(prevTotalPrice) + Number(newtotal)
+        );
+      
+        
         setMessage(data.message || "Cart updated successfully.");
+        
       } else {
         setError(data.message || "Error updating cart.");
       }
@@ -150,26 +162,31 @@ const Cart = () => {
 
   // TODO: Implement the removeFromCart function
   // This function should remove an item from the cart when the "Remove" button is clicked
-  const removeFromCart = async (productId) => {
+  const removeFromCart = async (itemId) => {
     // Send a request to the backend to remove the item from the cart
     try {
       const res = await fetch(`${apiUrl}/remove-from-cart`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ product_id: productId }),
+        body: JSON.stringify({ product_id: itemId }),
       });
 
       const data = await res.json();
 
       if (res.status === 200) {
         // If successful, remove the item from the cart in the state
-        setCart((prevCart) => prevCart.filter((item) => item.product_id !== productId));
+        const removedItem = cart.find(item => item.item_id === itemId);
+        setCart((prevCart) => prevCart.filter((item) => item.item_id !== itemId));
         
         // Update total price
-        const removedItem = cart.find(item => item.product_id === productId);
-        setTotalPrice(prevTotalPrice => prevTotalPrice - removedItem.quantity * removedItem.price);
+  
+        if (removedItem) {
+          const newprice = removedItem.quantity * removedItem.unit_price;
+          setTotalPrice(prevTotalPrice => Number(prevTotalPrice) - Number(newprice));
+        }
         
         setMessage(data.message || "Item removed from cart successfully.");
       } else {
@@ -247,6 +264,12 @@ const Cart = () => {
   const handlePinCodeChange = async (e) => {
     const pincode = e.target.value;
   
+    // Update the pincode field in the address state
+    setAddress((prevAddress) => ({
+      ...prevAddress,
+      pincode: pincode,
+    }));
+  
     // Validate pincode length
     if (pincode.length === 6) {
       try {
@@ -299,7 +322,7 @@ const Cart = () => {
                 <tr>
                   <th>Product</th>
                   <th>Price</th>
-                  <th>Stock Available</th>
+                  <th>Stock_Available</th>
                   <th>Quantity</th>
                   <th>Total</th>
                   <th>Actions</th>
@@ -311,11 +334,11 @@ const Cart = () => {
                   <tr key={item.item_id}>
                     <td>{item.product_name}</td>
                     <td>${item.unit_price}</td>
-                    <td>{item.stock}</td>
+                    <td>{item.stock_quantity}</td>
                     <td>
                       <button
                         onClick={() =>
-                          updateQuantity(item.product_id, -1, item.quantity, item.stock)
+                          updateQuantity(item.item_id, -1, item.quantity, item.stock_quantity)
                         }
                       >
                         -
@@ -323,7 +346,7 @@ const Cart = () => {
                       {item.quantity}
                       <button
                         onClick={() =>
-                          updateQuantity(item.product_id, 1, item.quantity, item.stock)
+                          updateQuantity(item.item_id, 1, item.quantity, item.stock_quantity)
                         }
                       >
                         +
@@ -331,7 +354,7 @@ const Cart = () => {
                     </td>
                     <td>${item.total_item_price}</td>
                     <td>
-                      <button onClick={() => removeFromCart(item.product_id)}>Remove</button>
+                      <button onClick={() => removeFromCart(item.item_id)}>Remove</button>
                     </td>
                   </tr>
                 ))}

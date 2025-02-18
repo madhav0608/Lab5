@@ -275,7 +275,7 @@ app.get("/display-cart", isAuthenticated, async (req, res) => {
 
     const cartItems = await pool.query(
       `SELECT Cart.item_id, Products.name AS product_name, Cart.quantity, 
-              Products.price AS unit_price, (Cart.quantity * Products.price) AS total_item_price
+              Products.price AS unit_price, (Cart.quantity * Products.price) AS total_item_price,Products.stock_quantity
        FROM Cart
        JOIN Products ON Cart.item_id = Products.product_id
        WHERE Cart.user_id = $1`,
@@ -286,8 +286,11 @@ app.get("/display-cart", isAuthenticated, async (req, res) => {
       return res.status(200).json({ message: "No items in cart.", cart: [], totalPrice: 0 });
     }
 
-    const totalPrice = cartItems.rows.reduce((sum, item) => sum + item.total_item_price, 0);
-
+    let totalPrice = 0;
+    cartItems.rows.forEach(item => {
+      totalPrice += +item.total_item_price; // Ensure item.total_item_price is treated as a number
+    });
+    
     res.status(200).json({
       message: "Cart fetched successfully.",
       cart: cartItems.rows,
@@ -328,11 +331,13 @@ app.post("/remove-from-cart", isAuthenticated, async (req, res) => {
 // API to update cart quantity
 app.post("/update-cart", isAuthenticated, async (req, res) => {
   try {
-    const { product_id, quantity } = req.body;
+    const { product_id, newQuantity } = req.body;
     const userId = req.session.userId;
 
-    if (!product_id || quantity === 0) {
-      return res.status(400).json({ message: "Invalid product ID or quantity" });
+    console.log("request for update cart is", req.body);
+
+    if (!product_id ) {
+      return res.status(400).json({ message: "Invalid product ID  1" });
     }
 
     const product = await pool.query("SELECT * FROM Products WHERE product_id = $1", [product_id]);
@@ -347,29 +352,20 @@ app.post("/update-cart", isAuthenticated, async (req, res) => {
     );
 
     if (cartItem.rows.length > 0) {
-      const newQuantity = cartItem.rows[0].quantity + quantity;
 
       if (newQuantity > productData.stock_quantity) {
         return res.status(400).json({ message: `Requested quantity exceeds available stock` });
       }
 
-      if (newQuantity <= 0) {
-        await pool.query("DELETE FROM Cart WHERE user_id = $1 AND item_id = $2", [userId, product_id]);
-      } else {
-        await pool.query(
-          "UPDATE Cart SET quantity = $1 WHERE user_id = $2 AND item_id = $3",
-          [newQuantity, userId, product_id]
-        );
-      }
-    } else {
-      if (quantity > productData.stock_quantity) {
-        return res.status(400).json({ message: `Requested quantity exceeds available stock` });
-      }
-
       await pool.query(
-        "INSERT INTO Cart (user_id, item_id, quantity) VALUES ($1, $2, $3)",
-        [userId, product_id, quantity]
+        "UPDATE Cart SET quantity = $1 WHERE user_id = $2 AND item_id = $3",
+        [newQuantity, userId, product_id]
       );
+      
+    } else {
+      
+        return res.status(400).json({ message: `Cannot update quantity which is not present` });
+    
     }
 
     res.status(200).json({ message: "Cart updated successfully" });
