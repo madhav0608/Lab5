@@ -154,23 +154,22 @@ app.post("/login", async (req, res) => {
 // use correct status codes and messages mentioned in the lab document
 app.get("/isLoggedIn", (req, res) => {
   if (req.session && req.session.userId) {
-    return res.status(200).json({ message: "User1 is logged in",username:req.session.username });
+    return res.status(200).json({ message: "Logged in",username:req.session.username });
   }
-  return res.status(400).json({ message: "User is not logged in" });
+  return res.status(400).json({ message: "Not logged in" });
 });
 
 
 // TODO: Implement API used to logout the user
 // use correct status codes and messages mentioned in the lab document
 // Logout API route
-app.get("/logout", (req, res) => {
+app.post("/logout", (req, res) => {
   // Destroy the session
   req.session.destroy((err) => {
     if (err) {
       // If there's an error while destroying the session, send a failure response
       return res.status(500).json({ message: "Failed to log out" });
     }
-
     // If session is destroyed successfully, send a success response
     res.status(200).json({ message: "Logged out successfully" });
   });
@@ -187,9 +186,9 @@ app.get("/list-products", isAuthenticated, async (req, res) => {
     const result = await pool.query("SELECT * FROM Products ORDER BY product_id ASC");
 
     // If no products found
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "No products found" });
-    }
+    // if (result.rows.length === 0) {
+    //   return res.status(404).json({ message: "No products found" });
+    // }
 
     // Send response with the list of products
     res.status(200).json({
@@ -299,7 +298,7 @@ app.get("/display-cart", isAuthenticated, async (req, res) => {
 
   } catch (error) {
     console.error("Error fetching cart ------", error);
-    res.status(500).json({ message: "Error fetching cart -----" });
+    res.status(500).json({ message: "Error fetching cart" });
   }
 });
 
@@ -382,7 +381,7 @@ app.post("/place-order", isAuthenticated, async (req, res) => {
     const userId = req.session.userId;
 
     const cartItems = await pool.query(
-      "SELECT Cart.item_id, Cart.quantity, Products.name, Products.price, Products.stock_quantity FROM Cart JOIN Products ON Cart.item_id = Products.product_id WHERE Cart.user_id = $1",
+      "SELECT Cart.item_id as product_id, Cart.quantity, Products.name, Products.price, Products.stock_quantity FROM Cart JOIN Products ON Cart.item_id = Products.product_id WHERE Cart.user_id = $1",
       [userId]
     );
 
@@ -445,6 +444,8 @@ app.get("/order-confirmation", isAuthenticated, async (req, res) => {
       "SELECT OrderItems.order_id, OrderItems.product_id, OrderItems.quantity, OrderItems.price, Products.name AS product_name FROM OrderItems JOIN Products ON OrderItems.product_id = Products.product_id WHERE OrderItems.order_id = $1",
       [orderId]
     );
+
+    
 
     res.status(200).json({
       message: "Order fetched successfully",

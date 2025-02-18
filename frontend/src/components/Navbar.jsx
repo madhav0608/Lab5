@@ -9,17 +9,30 @@ const Navbar = () => {
   // On successful logout, redirect the user to the login page.
   const handleLogout = async (e) => {
     e.preventDefault();
-    // Implement logout logic here
+    try {
+      // Make a request to the backend /logout route
+      const response = await fetch("http://localhost:4000/logout", {
+        method: "POST",
+        credentials: "include", // To include cookies (session data)
+      });
+
+      if (response.ok) {
+        // If logout is successful, navigate to the login page
+        navigate("/login");
+      } else {
+        console.error("Error logging out");
+      }
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
   };
 
-  // TODO: Use JSX to create a navigation bar with buttons for:
-  // - Home
-  // - Products
-  // - Cart
-  // - Logout
   return (
     <nav>
-      {/* Implement navigation buttons here */}
+      <button onClick={() => navigate("/dashboard")}>Home</button>
+      <button onClick={() => navigate("/products")}>Products</button>
+      <button onClick={() => navigate("/cart")}>Cart</button>
+      <button onClick={handleLogout}>Logout</button>
     </nav>
   );
 };
